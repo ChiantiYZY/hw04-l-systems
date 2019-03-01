@@ -35,11 +35,11 @@ function loadScene() {
 
   //let obj0: string = readTextFile('../branch.obj');
 
-  let obj0: string = readTextFile('../branch.obj');
+  let obj0: string = readTextFile('./src/branch.obj');
   branch = new Mesh(obj0, vec3.fromValues(0, 0, 0));
   branch.create();
 
-  let obj1: string = readTextFile('../petal.obj');
+  let obj1: string = readTextFile('./src/petal.obj');
   petal = new Mesh(obj1, vec3.fromValues(0, 0, 0));
   petal.create();
 

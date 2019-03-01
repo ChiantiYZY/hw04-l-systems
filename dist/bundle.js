@@ -6091,10 +6091,10 @@ function loadScene() {
     screenQuad = new __WEBPACK_IMPORTED_MODULE_4__geometry_ScreenQuad__["a" /* default */]();
     screenQuad.create();
     //let obj0: string = readTextFile('../branch.obj');
-    let obj0 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('../branch.obj');
+    let obj0 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('./src/branch.obj');
     branch = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj0, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     branch.create();
-    let obj1 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('../petal.obj');
+    let obj1 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('./src/petal.obj');
     petal = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj1, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     petal.create();
     square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
