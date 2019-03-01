@@ -6086,6 +6086,7 @@ let square;
 let screenQuad;
 let branch;
 let petal;
+let pot;
 let time = 0.0;
 function loadScene() {
     screenQuad = new __WEBPACK_IMPORTED_MODULE_4__geometry_ScreenQuad__["a" /* default */]();
@@ -6097,6 +6098,9 @@ function loadScene() {
     let obj1 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('./src/petal.obj');
     petal = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj1, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     petal.create();
+    let obj2 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('./src/pot.obj');
+    pot = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj2, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
+    pot.create();
     square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
     square.create();
 }
@@ -6154,6 +6158,19 @@ function main() {
     l.c1 = c1;
     l.c2 = c2;
     //l.draw(branch, petal, 1.0);
+    let potColorsArray = [0.2196, 0.1333, 0.0235, 1.0]; // brown
+    let col1Array = [2, 0, 0, 0]; // scale x
+    let col2Array = [0, 2, 0, 0]; // scale y
+    let col3Array = [0, 0, 2, 0]; // scale z
+    let col4Array = [0, 2, 0, 1]; // translation
+    let col1 = new Float32Array(col1Array);
+    let col2 = new Float32Array(col2Array);
+    let col3 = new Float32Array(col3Array);
+    let col4 = new Float32Array(col4Array);
+    let colors = new Float32Array(potColorsArray);
+    pot.setInstanceVBOs(col1, col2, col3, col4, colors);
+    pot.setNumInstances(1);
+    //renderer.render(camera, instancedShader, [pot]);
     // This function will be called every frame
     function tick() {
         camera.update();
@@ -6194,7 +6211,7 @@ function main() {
         //   square,
         // ]);
         //renderer.render(camera, instancedShader, [branch, petal]);
-        renderer.render(camera, instancedShader, [branch, petal]);
+        renderer.render(camera, instancedShader, [branch, petal, pot]);
         renderer.render(camera, flat, [screenQuad]);
         //renderer.render(camera, instancedShader, [petal]);
         stats.end();
@@ -17198,7 +17215,7 @@ module.exports = "#version 300 es\n\nuniform mat4 u_ViewProj;\nuniform float u_T
 /* 76 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\nprecision highp float;\nuniform mat4 u_ViewProj;\nuniform float u_Time;\nuniform mat3 u_CameraAxes;\n\nin vec4 fs_Col;\nin vec4 fs_Pos;\n//in vec4 fs_Rot;\n\nout vec4 out_Col;\n\n\n\nvoid main()\n{\n    float dist = length(fs_Pos.xyz) * 1.0;\n    //dist = 1.0;\n    out_Col = vec4(dist) * fs_Col;\n   // out_Col = fs_Rot;\n}\n"
+module.exports = "#version 300 es\nprecision highp float;\nuniform mat4 u_ViewProj;\nuniform float u_Time;\nuniform mat3 u_CameraAxes;\n\nin vec4 fs_Col;\nin vec4 fs_Pos;\n//in vec4 fs_Rot;\n\nout vec4 out_Col;\n\n\n\nvoid main()\n{\n    float dist = length(fs_Pos.xyz) * 1.0;\n    //dist = 1.0;\n\n    // if(fs_Col == vec4(1.0))\n    // {\n    //     out_Col = vec4(0.2196, 0.1333, 0.0235, 1.0);\n    // }\n    // else\n        out_Col = vec4(dist) * fs_Col;\n   // out_Col = fs_Rot;\n}\n"
 
 /***/ }),
 /* 77 */

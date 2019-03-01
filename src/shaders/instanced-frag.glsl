@@ -16,6 +16,12 @@ void main()
 {
     float dist = length(fs_Pos.xyz) * 1.0;
     //dist = 1.0;
-    out_Col = vec4(dist) * fs_Col;
+
+    // if(fs_Col == vec4(1.0))
+    // {
+    //     out_Col = vec4(0.2196, 0.1333, 0.0235, 1.0);
+    // }
+    // else
+        out_Col = vec4(dist) * fs_Col;
    // out_Col = fs_Rot;
 }

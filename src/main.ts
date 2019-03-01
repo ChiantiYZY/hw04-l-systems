@@ -25,6 +25,7 @@ let square: Square;
 let screenQuad: ScreenQuad;
 let branch: Mesh;
 let petal:Mesh;
+let pot:Mesh;
 let time: number = 0.0;
 
 function loadScene() {
@@ -42,6 +43,10 @@ function loadScene() {
   let obj1: string = readTextFile('./src/petal.obj');
   petal = new Mesh(obj1, vec3.fromValues(0, 0, 0));
   petal.create();
+
+  let obj2: string = readTextFile('./src/pot.obj');
+  pot = new Mesh(obj2, vec3.fromValues(0, 0, 0));
+  pot.create();
 
   square = new Square();
   square.create();
@@ -115,6 +120,21 @@ function main() {
           l.c2 = c2;
           //l.draw(branch, petal, 1.0);
 
+  let potColorsArray: number[] = [0.2196, 0.1333, 0.0235, 1.0]; // brown
+  let col1Array: number[] = [2, 0, 0, 0]; // scale x
+  let col2Array: number[] = [0, 2, 0, 0]; // scale y
+  let col3Array: number[] = [0, 0, 2, 0]; // scale z
+  let col4Array: number[] = [0, 2, 0, 1]; // translation
+  let col1: Float32Array = new Float32Array(col1Array);
+  let col2: Float32Array = new Float32Array(col2Array);
+  let col3: Float32Array = new Float32Array(col3Array);
+  let col4: Float32Array = new Float32Array(col4Array);
+  let colors: Float32Array = new Float32Array(potColorsArray);
+  pot.setInstanceVBOs(col1, col2, col3, col4, colors);
+  pot.setNumInstances(1); 
+
+  //renderer.render(camera, instancedShader, [pot]);
+
 
   // This function will be called every frame
   function tick() {
@@ -170,7 +190,7 @@ function main() {
     //   square,
     // ]);
     //renderer.render(camera, instancedShader, [branch, petal]);
-    renderer.render(camera, instancedShader, [branch, petal]);
+    renderer.render(camera, instancedShader, [branch, petal, pot]);
 
     renderer.render(camera, flat, [screenQuad]);
     //renderer.render(camera, instancedShader, [petal]);
