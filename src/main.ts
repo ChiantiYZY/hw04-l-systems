@@ -16,6 +16,9 @@ import Draw from './Draw';
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   iteration: 1,
+  angle: 1,
+  color1: [0.2314 * 255, 0.149 * 255, 0.0],
+  color2: [0.9333 * 255, 0.6706 * 255, 0.6706 * 255],
 };
 
 let square: Square;
@@ -25,8 +28,7 @@ let petal:Mesh;
 let time: number = 0.0;
 
 function loadScene() {
-  square = new Square();
-  square.create();
+
   screenQuad = new ScreenQuad();
   screenQuad.create();
 
@@ -37,38 +39,12 @@ function loadScene() {
   branch = new Mesh(obj0, vec3.fromValues(0, 0, 0));
   branch.create();
 
-  let obj1: string = readTextFile('../petal1.obj');
+  let obj1: string = readTextFile('../petal.obj');
   petal = new Mesh(obj1, vec3.fromValues(0, 0, 0));
   petal.create();
 
-
-  // Set up instanced rendering data arrays here.
-  // This example creates a set of positional
-  // offsets and gradiated colors for a 100x100 grid
-  // of squares, even though the VBO data for just
-  // one square is actually passed to the GPU
-  let offsetsArray = [];
-  let colorsArray = [];
-  let n: number = 10.0;
-  for(let i = 0; i < n; i++) {
-    for(let j = 0; j < n; j++) {
-      offsetsArray.push(i);
-      offsetsArray.push(j);
-      offsetsArray.push(0);
-
-      colorsArray.push(i / n);
-      colorsArray.push(j / n);
-      colorsArray.push(1.0);
-      colorsArray.push(1.0); // Alpha channel
-    }
-  }
-  let offsets: Float32Array = new Float32Array(offsetsArray);
-  let colors: Float32Array = new Float32Array(colorsArray);
-  //square.setInstanceVBOs(offsets, colors);
-  //square.setNumInstances(n * n); // grid of "particles"
-
-  // m.setInstanceVBOs(offsets, colors);
-  // m.setNumInstances(n * n); // grid of "particles"
+  square = new Square();
+  square.create();
 }
 
 function main() {
@@ -79,11 +55,18 @@ function main() {
   stats.domElement.style.left = '0px';
   stats.domElement.style.top = '0px';
   document.body.appendChild(stats.domElement);
+  let flag = false;
+
+  var show = { add:function(){ flag = true }};
 
   // Add controls to the gui
   const gui = new DAT.GUI();
 
   gui.add(controls, 'iteration', 1, 8).step(1);
+  gui.add(controls, 'angle', 0, 2).step(0.1);
+  gui.addColor(controls, 'color1');
+  gui.addColor(controls, 'color2');
+  gui.add(show, 'add').name('Do L-System');
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -98,7 +81,7 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  //const camera = new Camera(vec3.fromValues(50, 50, 10), vec3.fromValues(50, 50, 0));
+  //const camera = new Camera(vec3.fromValues(50, 50, 50), vec3.fromValues(50, 50, 50));
   const camera = new Camera(vec3.fromValues(10, 10, 10), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
@@ -123,10 +106,14 @@ function main() {
 
   let curIter = controls.iteration;
 
-            l.iteration = controls.iteration;
+          l.iteration = controls.iteration;
           //.log("check iteration: " + l.iteration + "\n");
-          var grammar = l.expansion();
-          l.draw(branch, petal);
+          //var grammar = l.expansion();
+          let c1 = vec3.fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0 );
+          let c2 = vec3.fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0 );
+          l.c1 = c1;
+          l.c2 = c2;
+          //l.draw(branch, petal, 1.0);
 
 
   // This function will be called every frame
@@ -137,24 +124,56 @@ function main() {
     flat.setTime(time++);
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
 
-    if(curIter != controls.iteration)
+    renderer.clear();
+    
+
+    let c1 = vec3.fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0 );
+    let c2 = vec3.fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0 );
+    let angle = controls.angle;
+    l.c1 = c1;
+    l.c2 = c2;
+    if(flag == true)
     {
+      // branch.colorsArray = [];
+      // // branch.transArray1 = [];
+      // // branch.transArray2 = [];
+      // // branch.transArray3 = [];
+      // // branch.transArray4 = [];
+      
+      // petal.colorsArray = [];
+
+      
+      //branch.destory;
+      
+      renderer.clear();
+      //branch.create();
+
+      let c1 = vec3.fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0 );
+      let c2 = vec3.fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0 );
+      let angle = controls.angle;
+      l.c1 = c1;
+      l.c2 = c2;
+
       console.log('check updating');
           //LSystem
           l.iteration = controls.iteration;
           //.log("check iteration: " + l.iteration + "\n");
-          var grammar = l.expansion();
+          //var grammar = l.expansion();
           
-          l.draw(branch, petal);
-
-          curIter = controls.iteration;
+          l.draw(branch, petal, angle);
     }
-    renderer.clear();
-    // renderer.render(camera, flat, [screenQuad]);
+
+
+    flag = false;
+    
     // renderer.render(camera, instancedShader, [
     //   square,
     // ]);
+    //renderer.render(camera, instancedShader, [branch, petal]);
     renderer.render(camera, instancedShader, [branch, petal]);
+
+    renderer.render(camera, flat, [screenQuad]);
+    //renderer.render(camera, instancedShader, [petal]);
     stats.end();
 
     // Tell the browser to call `tick` again whenever it renders a new frame

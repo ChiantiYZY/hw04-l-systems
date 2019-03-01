@@ -5,17 +5,19 @@ export default class Expansion {
 
     //flower grammar is commented out
     setRules() {
-        //this.rules.set('X', '[-FX][+FX][<FX][>FX]FX*');
-        //this.rules.set('X', 'F*X');
-        this.rules.set('F', 'FF');
+        this.rules.set('X', 'FFF[-FX][+FX][++FX][--FX]*');
+        this.rules.set('*', 'F*');
+        //this.rules.set('X', '-FX');
         //this.rules.set('*', '[-*X][+*X][<*X][>*X]*X');
-        this.rules.set('X', 'F[+FX][-FX][++FX][--FX]'); 
-        //this.rules.set('X', 'F[-FX]F[+FFX][<FX][>FX]*'); 
+       //this.rules.set('X', 'FFFF[+X][-X]*'); 
+       //this.rules.set('X', 'F[--F-+]X[++F+-]X'); 
+        //this.rules.set('X', 'F[-FX]');
 
         
 
         //flower
-        //this.rules.set('X', 'FF[+FX][-FX][++FX][--FX]');
+        //this.rules.set('X', 'F[+X][-X]*');
+        //this.rules.set('*', 'F');
     }
 
 
@@ -23,7 +25,7 @@ export default class Expansion {
         let newGrammar: string;
     
         if(this.rules.get(grammar) != undefined)
-        {
+        {                
             return this.rules.get(grammar);
         }
         else

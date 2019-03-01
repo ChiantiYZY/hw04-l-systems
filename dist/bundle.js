@@ -6078,6 +6078,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
     iteration: 1,
+    angle: 1,
+    color1: [0.2314 * 255, 0.149 * 255, 0.0],
+    color2: [0.9333 * 255, 0.6706 * 255, 0.6706 * 255],
 };
 let square;
 let screenQuad;
@@ -6085,42 +6088,17 @@ let branch;
 let petal;
 let time = 0.0;
 function loadScene() {
-    square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
-    square.create();
     screenQuad = new __WEBPACK_IMPORTED_MODULE_4__geometry_ScreenQuad__["a" /* default */]();
     screenQuad.create();
     //let obj0: string = readTextFile('../branch.obj');
     let obj0 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('../branch.obj');
     branch = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj0, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     branch.create();
-    let obj1 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('../petal1.obj');
+    let obj1 = Object(__WEBPACK_IMPORTED_MODULE_7__globals__["b" /* readTextFile */])('../petal.obj');
     petal = new __WEBPACK_IMPORTED_MODULE_10__geometry_Mesh__["a" /* default */](obj1, __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     petal.create();
-    // Set up instanced rendering data arrays here.
-    // This example creates a set of positional
-    // offsets and gradiated colors for a 100x100 grid
-    // of squares, even though the VBO data for just
-    // one square is actually passed to the GPU
-    let offsetsArray = [];
-    let colorsArray = [];
-    let n = 10.0;
-    for (let i = 0; i < n; i++) {
-        for (let j = 0; j < n; j++) {
-            offsetsArray.push(i);
-            offsetsArray.push(j);
-            offsetsArray.push(0);
-            colorsArray.push(i / n);
-            colorsArray.push(j / n);
-            colorsArray.push(1.0);
-            colorsArray.push(1.0); // Alpha channel
-        }
-    }
-    let offsets = new Float32Array(offsetsArray);
-    let colors = new Float32Array(colorsArray);
-    //square.setInstanceVBOs(offsets, colors);
-    //square.setNumInstances(n * n); // grid of "particles"
-    // m.setInstanceVBOs(offsets, colors);
-    // m.setNumInstances(n * n); // grid of "particles"
+    square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */]();
+    square.create();
 }
 function main() {
     // Initial display for framerate
@@ -6130,9 +6108,15 @@ function main() {
     stats.domElement.style.left = '0px';
     stats.domElement.style.top = '0px';
     document.body.appendChild(stats.domElement);
+    let flag = false;
+    var show = { add: function () { flag = true; } };
     // Add controls to the gui
     const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
     gui.add(controls, 'iteration', 1, 8).step(1);
+    gui.add(controls, 'angle', 0, 2).step(0.1);
+    gui.addColor(controls, 'color1');
+    gui.addColor(controls, 'color2');
+    gui.add(show, 'add').name('Do L-System');
     // get canvas and webgl context
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl2');
@@ -6144,7 +6128,7 @@ function main() {
     Object(__WEBPACK_IMPORTED_MODULE_7__globals__["c" /* setGL */])(gl);
     // Initial call to load scene
     loadScene();
-    //const camera = new Camera(vec3.fromValues(50, 50, 10), vec3.fromValues(50, 50, 0));
+    //const camera = new Camera(vec3.fromValues(50, 50, 50), vec3.fromValues(50, 50, 50));
     const camera = new __WEBPACK_IMPORTED_MODULE_6__Camera__["a" /* default */](__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(10, 10, 10), __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0));
     const renderer = new __WEBPACK_IMPORTED_MODULE_5__rendering_gl_OpenGLRenderer__["a" /* default */](canvas);
     renderer.setClearColor(0.2, 0.2, 0.2, 1);
@@ -6164,8 +6148,12 @@ function main() {
     let curIter = controls.iteration;
     l.iteration = controls.iteration;
     //.log("check iteration: " + l.iteration + "\n");
-    var grammar = l.expansion();
-    l.draw(branch, petal);
+    //var grammar = l.expansion();
+    let c1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0);
+    let c2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0);
+    l.c1 = c1;
+    l.c2 = c2;
+    //l.draw(branch, petal, 1.0);
     // This function will be called every frame
     function tick() {
         camera.update();
@@ -6173,21 +6161,42 @@ function main() {
         instancedShader.setTime(time);
         flat.setTime(time++);
         gl.viewport(0, 0, window.innerWidth, window.innerHeight);
-        if (curIter != controls.iteration) {
+        renderer.clear();
+        let c1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0);
+        let c2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0);
+        let angle = controls.angle;
+        l.c1 = c1;
+        l.c2 = c2;
+        if (flag == true) {
+            // branch.colorsArray = [];
+            // // branch.transArray1 = [];
+            // // branch.transArray2 = [];
+            // // branch.transArray3 = [];
+            // // branch.transArray4 = [];
+            // petal.colorsArray = [];
+            //branch.destory;
+            renderer.clear();
+            //branch.create();
+            let c1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color1[0] / 255.0, controls.color1[1] / 255.0, controls.color1[2] / 255.0);
+            let c2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(controls.color2[0] / 255.0, controls.color2[1] / 255.0, controls.color2[2] / 255.0);
+            let angle = controls.angle;
+            l.c1 = c1;
+            l.c2 = c2;
             console.log('check updating');
             //LSystem
             l.iteration = controls.iteration;
             //.log("check iteration: " + l.iteration + "\n");
-            var grammar = l.expansion();
-            l.draw(branch, petal);
-            curIter = controls.iteration;
+            //var grammar = l.expansion();
+            l.draw(branch, petal, angle);
         }
-        renderer.clear();
-        // renderer.render(camera, flat, [screenQuad]);
+        flag = false;
         // renderer.render(camera, instancedShader, [
         //   square,
         // ]);
+        //renderer.render(camera, instancedShader, [branch, petal]);
         renderer.render(camera, instancedShader, [branch, petal]);
+        renderer.render(camera, flat, [screenQuad]);
+        //renderer.render(camera, instancedShader, [petal]);
         stats.end();
         // Tell the browser to call `tick` again whenever it renders a new frame
         requestAnimationFrame(tick);
@@ -16647,9 +16656,15 @@ class Lsytem {
         this.grammars = ['X'];
         this.expanse = new __WEBPACK_IMPORTED_MODULE_1__Expansion__["a" /* default */]();
         this.drawing = new __WEBPACK_IMPORTED_MODULE_2__Draw__["a" /* default */]();
+        this.nums = [];
+        this.c1 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
+        this.c2 = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
         this.iteration = it;
         this.expanse.setRules();
         this.drawing.setRule();
+        this.num = 1.0;
+        this.isMesh = false;
+        this.grammar = 'X';
     }
     test() {
         console.log("check \n");
@@ -16663,16 +16678,12 @@ class Lsytem {
             var lastIndex = this.grammars.length - 1;
             //calculate how much more iterations are needed 
             var moreIteration = this.iteration - this.grammars.length;
-            for (var i = 0; i < moreIteration; i++) {
+            for (var i = lastIndex; i < this.iteration; i++) {
                 let last = this.grammars[lastIndex];
                 // console.log('lst is:' + last); 
                 let newStr = '';
                 for (var j = 0; j < last.length; j++) {
-                    //get expanded substring and adds to the newStr
-                    //console.log(last[j]);
                     newStr += this.expanse.expanse(last[j]);
-                    // console.log('adding: ' + this.expanse.expanse(last[j]));
-                    // console.log('cur newStr is: ' + newStr);
                 }
                 //console.log('newStr is: ' + newStr);
                 //push the new string to the grammar list 
@@ -16685,89 +16696,131 @@ class Lsytem {
         else {
             return this.grammars[this.iteration];
         }
+        return this.grammar;
     }
-    draw(m, p) {
-        // m.transArray1 = [];
-        // m.transArray2 = [];
-        // m.transArray3 = [];
-        // m.transArray4 = [];
-        // //read the file name in
-        // let obj0: string = readTextFile('../branch.obj');
-        //console.log('draw grammar: ' + this.expansion());
+    draw(m, p, angle) {
         let count = 0;
         let count1 = 0;
         var grammar = this.expansion();
+        this.drawing.ang = angle;
         //console.log('grammar is: ' + grammar + '\n');
         for (var i = 0; i < grammar.length; i++) {
+            this.isMesh = false;
             //move the turtle
-            //console.log('cur grammar: ' + grammar[i]);
+            //console.log('num: ' + this.num);
             this.drawing.draw(grammar[i]);
-            //if the grammar is F, meaning that we need to show it on the screen
-            // if(grammar[i] == 'F' || grammar[i] == '-' || grammar[i] == '+')
+            //num++;
             if (grammar[i] == 'F') {
+                this.num++;
+            }
+            if (grammar[i] == '[') {
+                this.nums.push(this.num);
+            }
+            if (grammar[i] == ']') {
+                this.num = this.nums.pop();
+            }
+            this.drawing.sca = 5.0 / this.num;
+            let freq = Math.random();
+            let pos = this.drawing.cur.position;
+            let rot = this.drawing.cur.orientation;
+            //let sca = this.drawing.cur.scale;
+            //console.log(this.drawing.cur);
+            let radii = 1.0;
+            if (grammar[i] == 'F' || grammar[i] == '-' || grammar[i] == '+') {
                 count++;
-                //get the current translation and rotation to generate transform
-                let pos = this.drawing.cur.position;
-                let rot = this.drawing.cur.orientation;
-                let sca = this.drawing.cur.scale;
-                //console.log(this.drawing.cur);
-                let transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
-                transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].fromRotationTranslationScale(transform, rot, pos, sca);
-                m.transArray1.push(transform[0]);
-                m.transArray1.push(transform[1]);
-                m.transArray1.push(transform[2]);
-                m.transArray1.push(transform[3]);
-                m.transArray2.push(transform[4]);
-                m.transArray2.push(transform[5]);
-                m.transArray2.push(transform[6]);
-                m.transArray2.push(transform[7]);
-                m.transArray3.push(transform[8]);
-                m.transArray3.push(transform[9]);
-                m.transArray3.push(transform[10]);
-                m.transArray3.push(transform[11]);
-                m.transArray4.push(transform[12]);
-                m.transArray4.push(transform[13]);
-                m.transArray4.push(transform[14]);
-                m.transArray4.push(transform[15]);
-                let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0.1647, 0.2314, 0.0039);
-                m.colorsArray.push(color[0]);
-                m.colorsArray.push(color[1]);
-                m.colorsArray.push(color[2]);
+                radii = 2.0;
+                this.isMesh = true;
+                this.curM = m;
+                m.colorsArray.push(this.c1[0]);
+                m.colorsArray.push(this.c1[1]);
+                m.colorsArray.push(this.c1[2]);
                 m.colorsArray.push(1.0);
             }
-            let flag = Math.random();
             if (grammar[i] == '*') {
-                //console.log('check petal');
+                if (this.num < 10) {
+                    continue;
+                }
                 count1++;
-                //get the current translation and rotation to generate transform
-                let pos = this.drawing.cur.position;
-                let rot = this.drawing.cur.orientation;
-                let sca = this.drawing.cur.scale;
-                //console.log(this.drawing.cur);
-                let transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
-                transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].fromRotationTranslationScale(transform, rot, pos, sca);
+                this.isMesh = true;
+                this.curM = p;
+                p.colorsArray.push(this.c2[0]);
+                this.curM.colorsArray.push(this.c2[1]);
+                this.curM.colorsArray.push(this.c2[2]);
+                this.curM.colorsArray.push(1.0);
+            }
+            let transform = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            let rotate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            let translate = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            let scalar = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(radii * this.drawing.sca, this.drawing.sca, radii * this.drawing.sca);
+            let scalation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].create();
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].fromQuat(rotate, rot);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].fromTranslation(translate, pos);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].fromScaling(scalation, scalar);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].multiply(rotate, rotate, scalation);
+            __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* mat4 */].multiply(transform, translate, rotate);
+            //if the grammar is F, meaning that we need to show it on the screen
+            if (this.isMesh) 
+            //if(grammar[i] == 'F' || grammar[i] == '-' || grammar[i] == '+')
+            {
+                //this.drawing.sca = 3.0 / this.num;
+                this.curM.transArray1.push(transform[0]);
+                this.curM.transArray1.push(transform[1]);
+                this.curM.transArray1.push(transform[2]);
+                this.curM.transArray1.push(transform[3]);
+                this.curM.transArray2.push(transform[4]);
+                this.curM.transArray2.push(transform[5]);
+                this.curM.transArray2.push(transform[6]);
+                this.curM.transArray2.push(transform[7]);
+                this.curM.transArray3.push(transform[8]);
+                this.curM.transArray3.push(transform[9]);
+                this.curM.transArray3.push(transform[10]);
+                this.curM.transArray3.push(transform[11]);
+                this.curM.transArray4.push(transform[12]);
+                this.curM.transArray4.push(transform[13]);
+                this.curM.transArray4.push(transform[14]);
+                this.curM.transArray4.push(transform[15]);
+                let color = this.c1;
+            }
+            /*
+            let flag = Math.random();
+
+            if(grammar[i] == '*')
+            {
+                if(this.num < 10)
+                {
+                    continue;
+                }
+                count1 ++;
+                
                 p.transArray1.push(transform[0]);
                 p.transArray1.push(transform[1]);
                 p.transArray1.push(transform[2]);
                 p.transArray1.push(transform[3]);
+
                 p.transArray2.push(transform[4]);
-                p.transArray2.push(transform[5]);
+                p.transArray2.push(transform[5] );
                 p.transArray2.push(transform[6]);
                 p.transArray2.push(transform[7]);
+                
                 p.transArray3.push(transform[8]);
                 p.transArray3.push(transform[9]);
                 p.transArray3.push(transform[10]);
                 p.transArray3.push(transform[11]);
+
                 p.transArray4.push(transform[12]);
                 p.transArray4.push(transform[13]);
                 p.transArray4.push(transform[14]);
                 p.transArray4.push(transform[15]);
-                let color = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0.9333, 0.6706, 0.6706);
+
+
+                let color = this.c2;
+
                 p.colorsArray.push(color[0]);
                 p.colorsArray.push(color[1]);
                 p.colorsArray.push(color[2]);
                 p.colorsArray.push(1.0);
             }
+            */
         }
         //let offsets: Float32Array = new Float32Array(offsetsArray);
         let array1 = new Float32Array(m.transArray1);
@@ -16784,8 +16837,10 @@ class Lsytem {
         m.setInstanceVBOs(array1, array2, array3, array4, colors);
         m.setNumInstances(count); // grid of "particles"
         //console.log(this.drawing.turtles);
+        //m.create();
         p.setInstanceVBOs(parray1, parray2, parray3, parray4, pcolors);
         p.setNumInstances(count1);
+        //p.create();
     }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Lsytem;
@@ -16804,14 +16859,16 @@ class Expansion {
     }
     //flower grammar is commented out
     setRules() {
-        //this.rules.set('X', '[-FX][+FX][<FX][>FX]FX*');
-        //this.rules.set('X', 'F*X');
-        this.rules.set('F', 'FF');
+        this.rules.set('X', 'FFF[-FX][+FX][++FX][--FX]*');
+        this.rules.set('*', 'F*');
+        //this.rules.set('X', '-FX');
         //this.rules.set('*', '[-*X][+*X][<*X][>*X]*X');
-        this.rules.set('X', 'F[+FX][-FX][++FX][--FX]');
-        //this.rules.set('X', 'F[-FX]F[+FFX][<FX][>FX]*'); 
+        //this.rules.set('X', 'FFFF[+X][-X]*'); 
+        //this.rules.set('X', 'F[--F-+]X[++F+-]X'); 
+        //this.rules.set('X', 'F[-FX]');
         //flower
-        //this.rules.set('X', 'FF[+FX][-FX][++FX][--FX]');
+        //this.rules.set('X', 'F[+X][-X]*');
+        //this.rules.set('*', 'F');
     }
     expanse(grammar) {
         let newGrammar;
@@ -16839,46 +16896,46 @@ class Expansion {
 class Draw {
     //scale = Math.random();
     constructor() {
-        // let obj0: string = readTextFile('../branch.obj');
-        // let m = new Mesh(obj0, vec3.fromValues(0, 0, 0));
-        // m.create();
         this.turtles = [new __WEBPACK_IMPORTED_MODULE_0__Turtle__["a" /* default */]()];
         this.cur = this.turtles[0];
         this.rules = new Map();
+        // let obj0: string = readTextFile('../branch.obj');
+        // let m = new Mesh(obj0, vec3.fromValues(0, 0, 0));
+        // m.create();
+        this.sca = 1.0;
+        this.ang = 1.0;
     }
     pushTurtle() {
         let tmp = new __WEBPACK_IMPORTED_MODULE_0__Turtle__["a" /* default */]();
         tmp.copy(this.cur);
+        // vec3.copy(tmp.prevPos, this.cur.position);
         this.turtles.push(tmp);
-        // console.log('push in cur: ');
-        // console.log(this.cur);
-        // console.log(tmp);
-        //this.cur = tmp;
     }
     popTurtle() {
         let tmp = this.turtles.pop();
         this.cur.copy(tmp);
-        //this.cur = tmp;
-        // console.log('pop out prev: ');
-        // console.log(this.cur);
-        // console.log(tmp);
     }
     growUp() {
         // console.log(this);
-        let step = Math.random();
-        this.cur.growUp(step);
+        //let step = Math.random();
+        this.cur.growUp(this.sca);
     }
     rotateRight() {
         let flag = Math.random();
-        // if(this.cur.scale[0] < 0.7)
+        // if(this.cur.scale[0] > 0.7)
         // {
         //     return;
         // }
-        let angle = Math.random();
-        if (flag < 0.5)
+        let angle = this.ang * Math.random();
+        //this.cur.rotateOnZ(1.57 * angle);
+        if (flag < 0.33)
             this.cur.rotateOnZ(angle);
-        else
+        else if (flag < 0.67)
             this.cur.rotateOnY(angle);
+        else
+            this.cur.rotateOnX(angle);
+        // else    
+        //     this.cur.growUp(1);
     }
     rotateLeft() {
         let flag = Math.random();
@@ -16886,26 +16943,34 @@ class Draw {
         // {
         //     return;
         // }
-        let angle = Math.random();
-        if (flag < 0.5)
-            this.cur.rotateOnZ(-angle);
+        let angle = this.ang * -Math.random();
+        //this.cur.rotateOnZ(-1.57* angle);
+        if (flag < 0.33)
+            this.cur.rotateOnZ(angle);
+        else if (flag < 0.67)
+            this.cur.rotateOnY(angle);
         else
-            this.cur.rotateOnY(-angle);
+            this.cur.rotateOnX(angle);
+        // else    
+        //     this.cur.growUp(1);
         //console.log('check rotate: ');
         // console.log(this.cur);
     }
     rotateForward() {
-        this.cur.rotateOnY(-1.5);
+        let flag = Math.random();
+        this.cur.rotateOnY(1.57 * flag);
         //console.log('check rotate: ');
         // console.log(this.cur);
     }
     rotateBack() {
-        this.cur.rotateOnY(1.5);
+        let flag = Math.random();
+        this.cur.rotateOnY(-1.57 * flag);
         //console.log('check rotate: ');
         // console.log(this.cur);
     }
     setRule() {
         this.rules.set('F', this.growUp.bind(this));
+        this.rules.set('*', this.growUp.bind(this));
         this.rules.set('+', this.rotateRight.bind(this));
         this.rules.set('-', this.rotateLeft.bind(this));
         this.rules.set('>', this.rotateForward.bind(this));
@@ -16919,7 +16984,7 @@ class Draw {
         //console.log('grammar is: ' + grammar + 'func is: '  + func);
         if (func) {
             func();
-            //console.log(this.cur);
+            // console.log(this.cur);
         }
     }
 }
@@ -16943,19 +17008,28 @@ class Turtle {
         this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
         this.right = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
         this.orientation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].create();
-        this.scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].create();
         this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0);
         this.prevPos = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 0);
         this.up = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 1, 0);
         this.forward = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(0, 0, 1);
         this.right = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(1, 0, 0);
-        this.scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(1, 1, 1);
+        // this.scale = vec3.fromValues(1, 1, 1);
     }
     growUp(distance) {
-        distance = 1.0;
+        //distance = 1.0;
         //vec3.copy(this.position, this.prevPos);
-        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(this.position[0] + distance * this.up[0], this.position[1] + distance * this.up[1], this.position[2] + distance * this.up[2]);
-        this.scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(distance * this.scale[0], distance * this.scale[1], distance * this.scale[2]);
+        // let rot = mat3.create();
+        // mat3.fromQuat(rot, this.orientation);
+        // let trans = vec3.fromValues(distance,distance,distance);
+        // vec3.transformQuat(trans, trans, this.orientation);
+        this.prevPos = this.position;
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(this.prevPos[0] + distance * this.up[0], this.prevPos[1] + distance * this.up[1], this.prevPos[2] + distance * this.up[2]);
+        // this.position = vec3.fromValues(this.position[0] + trans[0] , 
+        //     this.position[1] + trans[1], 
+        //     this.position[2] + trans[2]);
+        // this.scale = vec3.fromValues(distance * this.scale[0],
+        //                              distance * this.scale[1],
+        //                              distance * this.scale[2]);
     }
     rotateOnZ(angle) {
         let rot = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].create();
@@ -16965,9 +17039,19 @@ class Turtle {
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.forward, this.forward, rot);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.up, this.up, rot);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.right, this.right, rot);
-        this.orientation = rot;
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].multiply(this.orientation, rot, this.orientation);
     }
     rotateOnY(angle) {
+        let rot = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].create();
+        //generate the quat along the world z axis
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].setAxisAngle(rot, this.up, angle); //angle is radius
+        //updating UFR// 
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.forward, this.forward, rot);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.up, this.up, rot);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.right, this.right, rot);
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].multiply(this.orientation, rot, this.orientation);
+    }
+    rotateOnX(angle) {
         let rot = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].create();
         //generate the quat along the world z axis
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].setAxisAngle(rot, this.right, angle); //angle is radius
@@ -16975,16 +17059,23 @@ class Turtle {
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.forward, this.forward, rot);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.up, this.up, rot);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].transformQuat(this.right, this.right, rot);
-        this.orientation = rot;
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].multiply(this.orientation, rot, this.orientation);
     }
     copy(turtle) {
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.position, turtle.position);
+        //vec3.copy(this.position, turtle.prevPos);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.prevPos, turtle.prevPos);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* quat */].copy(this.orientation, turtle.orientation);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.up, turtle.up);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.right, turtle.right);
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.forward, turtle.forward);
-        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].copy(this.scale, turtle.scale);
+        //vec3.copy(this.scale, turtle.scale);
+        this.position = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["d" /* vec3 */].fromValues(turtle.position[0], turtle.position[1], turtle.position[2]);
+        // this.prevPos = turtle.prevPos;
+        // this.orientation, turtle.orientation);
+        // this.up, turtle.up);
+        // this.right, turtle.right);
+        // this.forward, turtle.forward);
+        // this.scale, turtle.scale);
         // return 
     }
 }
@@ -17101,13 +17192,13 @@ class Mesh extends __WEBPACK_IMPORTED_MODULE_1__rendering_gl_Drawable__["a" /* d
 /* 75 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\n\nuniform mat4 u_ViewProj;\nuniform float u_Time;\n\nuniform mat3 u_CameraAxes; // Used for rendering particles as billboards (quads that are always looking at the camera)\n// gl_Position = center + vs_Pos.x * camRight + vs_Pos.y * camUp;\n\nin vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a different place\nin vec4 vs_Nor; // Non-instanced, and presently unused\nin vec4 vs_Col; // An instanced rendering attribute; each particle instance has a different color\n// in vec3 vs_Translate; // Another instance rendering attribute used to position each quad instance in the scene\n in vec4 vs_Transform1;\n  in vec4 vs_Transform2;\n   in vec4 vs_Transform3;\n    in vec4 vs_Transform4;\nin vec2 vs_UV; // Non-instanced, and presently unused in main(). Feel free to use it for your meshes.\n\nout vec4 fs_Col;\nout vec4 fs_Pos;\n//out vec4 fs_Rot;\n\n\nvec4 multQuat(vec4 q1, vec4 q2)\n{\nreturn vec4(\nq1.w * q2.x + q1.x * q2.w + q1.z * q2.y - q1.y * q2.z,\nq1.w * q2.y + q1.y * q2.w + q1.x * q2.z - q1.z * q2.x,\nq1.w * q2.z + q1.z * q2.w + q1.y * q2.x - q1.x * q2.y,\nq1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z\n);\n}\n\nvec4 rotate_vector( vec4 quat, vec4 vec )\n{\nvec4 qv = multQuat( quat, vec);\nreturn multQuat( qv, vec4(-quat.x, -quat.y, -quat.z, quat.w) );\n}\n\n\nvoid main()\n{\n    fs_Col = vs_Col;\n    fs_Pos = vs_Pos;\n    // fs_Rot = abs(vs_Rotate);\n\n    // vec3 offset = vs_Translate;\n    // vec4 rotate = (vs_Rotate);\n    // //offset.z = (sin((u_Time + offset.x) * 3.14159 * 0.1) + cos((u_Time + offset.y) * 3.14159 * 0.1)) * 1.5;\n\n    mat4 trans = mat4(vs_Transform1, vs_Transform2, vs_Transform3, vs_Transform4);\n    vec4 pos = trans * vs_Pos;\n\n    // vec4 pos = rotate_vector(vs_Rotate, vs_Pos + vec4(offset, 0.0));\n    pos -= vec4(0, 2.0, 0, 0);\n    //pos = vec4(0.5 * vec2(pos), pos.zw);\n    //vec3 billboardPos = offset + vs_Pos.x * u_CameraAxes[0] + vs_Pos.y * u_CameraAxes[1];\n    //vec3 billboardPos = offset + pos.x * u_CameraAxes[0] + pos.y * u_CameraAxes[1];\n    //billboardPos = rotate * billboardPos;\n\n    //gl_Position = u_ViewProj * vec4(billboardPos, 1.0);\n\n\n    //  vec3 color = vec3(0.1647, 0.2314, 0.0039);\n\n    //gl_Position = u_ViewProj * vs_Pos;\n    gl_Position = u_ViewProj * vec4(2.0 * vec3(pos), pos.w);\n\n}\n"
+module.exports = "#version 300 es\n\nuniform mat4 u_ViewProj;\nuniform float u_Time;\n\nuniform mat3 u_CameraAxes; // Used for rendering particles as billboards (quads that are always looking at the camera)\n// gl_Position = center + vs_Pos.x * camRight + vs_Pos.y * camUp;\n\nin vec4 vs_Pos; // Non-instanced; each particle is the same quad drawn in a different place\nin vec4 vs_Nor; // Non-instanced, and presently unused\nin vec4 vs_Col; // An instanced rendering attribute; each particle instance has a different color\n// in vec3 vs_Translate; // Another instance rendering attribute used to position each quad instance in the scene\n in vec4 vs_Transform1;\n  in vec4 vs_Transform2;\n   in vec4 vs_Transform3;\n    in vec4 vs_Transform4;\nin vec2 vs_UV; // Non-instanced, and presently unused in main(). Feel free to use it for your meshes.\n\nout vec4 fs_Col;\nout vec4 fs_Pos;\n//out vec4 fs_Rot;\n\n\nvec4 multQuat(vec4 q1, vec4 q2)\n{\nreturn vec4(\nq1.w * q2.x + q1.x * q2.w + q1.z * q2.y - q1.y * q2.z,\nq1.w * q2.y + q1.y * q2.w + q1.x * q2.z - q1.z * q2.x,\nq1.w * q2.z + q1.z * q2.w + q1.y * q2.x - q1.x * q2.y,\nq1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z\n);\n}\n\nvec4 rotate_vector( vec4 quat, vec4 vec )\n{\nvec4 qv = multQuat( quat, vec);\nreturn multQuat( qv, vec4(-quat.x, -quat.y, -quat.z, quat.w) );\n}\n\n\nvoid main()\n{\n    fs_Col = vs_Col;\n    fs_Pos = vs_Pos;\n    // fs_Rot = abs(vs_Rotate);\n\n    // vec3 offset = vs_Translate;\n    // vec4 rotate = (vs_Rotate);\n    // //offset.z = (sin((u_Time + offset.x) * 3.14159 * 0.1) + cos((u_Time + offset.y) * 3.14159 * 0.1)) * 1.5;\n\n    mat4 trans = mat4(vs_Transform1, vs_Transform2, vs_Transform3, vs_Transform4);\n    vec4 pos = trans * vs_Pos;\n\n    // vec4 pos = rotate_vector(vs_Rotate, vs_Pos + vec4(offset, 0.0));\n    pos -= vec4(0, 8.0, 0, 0);\n\n    //fs_Pos = pos;\n    //pos = vec4(0.5 * vec2(pos), pos.zw);\n    //vec3 billboardPos = offset + vs_Pos.x * u_CameraAxes[0] + vs_Pos.y * u_CameraAxes[1];\n    //vec3 billboardPos = offset + pos.x * u_CameraAxes[0] + pos.y * u_CameraAxes[1];\n    //billboardPos = rotate * billboardPos;\n\n    //gl_Position = u_ViewProj * vec4(billboardPos, 1.0);\n\n\n      vec3 color = vec3(0.2314, 0.149, 0.0);\n\n    //gl_Position = u_ViewProj * vs_Pos;\n    gl_Position = u_ViewProj * vec4(0.7 * vec3(pos), pos.w);\n    //gl_Position = u_ViewProj * pos;\n\n}\n"
 
 /***/ }),
 /* 76 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\nprecision highp float;\n\nin vec4 fs_Col;\nin vec4 fs_Pos;\n//in vec4 fs_Rot;\n\nout vec4 out_Col;\n\nvoid main()\n{\n    float dist = 1.0 - (length(fs_Pos.xyz) * 1.0);\n    out_Col = vec4(dist) * fs_Col;\n    //out_Col = fs_Rot;\n}\n"
+module.exports = "#version 300 es\nprecision highp float;\nuniform mat4 u_ViewProj;\nuniform float u_Time;\nuniform mat3 u_CameraAxes;\n\nin vec4 fs_Col;\nin vec4 fs_Pos;\n//in vec4 fs_Rot;\n\nout vec4 out_Col;\n\n\n\nvoid main()\n{\n    float dist = length(fs_Pos.xyz) * 1.0;\n    //dist = 1.0;\n    out_Col = vec4(dist) * fs_Col;\n   // out_Col = fs_Rot;\n}\n"
 
 /***/ }),
 /* 77 */
@@ -17119,7 +17210,7 @@ module.exports = "#version 300 es\nprecision highp float;\n\n// The vertex shade
 /* 78 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\nprecision highp float;\n\nuniform vec3 u_Eye, u_Ref, u_Up;\nuniform vec2 u_Dimensions;\nuniform float u_Time;\n\nin vec2 fs_Pos;\nout vec4 out_Col;\n\nvoid main() {\n  out_Col = vec4(0.5 * (fs_Pos + vec2(1.0)), 0.0, 1.0);\n}\n"
+module.exports = "#version 300 es\nprecision highp float;\n\nuniform vec3 u_Eye, u_Ref, u_Up;\nuniform vec2 u_Dimensions;\nuniform float u_Time;\n\nin vec2 fs_Pos;\nout vec4 out_Col;\n\n/**\n * Noise functions\n */\n\n\nconst mat2 m = mat2( 0.80,  0.60, -0.60,  0.80 );\n\nfloat noise( in vec2 x )\n{\n\treturn sin(1.5*x.x)*sin(1.5*x.y);\n}\n\nfloat fbm4( vec2 p )\n{\n    float f = 0.0;\n    f += 0.5000*noise( p ); p = m*p*2.02;\n    f += 0.2500*noise( p ); p = m*p*2.03;\n    f += 0.1250*noise( p ); p = m*p*2.01;\n    f += 0.0625*noise( p );\n    return f/0.9375;\n}\n\nfloat fbm6( vec2 p )\n{\n    float f = 0.0;\n    f += 0.500000*(0.5+0.5*noise( p )); p = m*p*2.02;\n    f += 0.250000*(0.5+0.5*noise( p )); p = m*p*2.03;\n    f += 0.125000*(0.5+0.5*noise( p )); p = m*p*2.01;\n    f += 0.062500*(0.5+0.5*noise( p )); p = m*p*2.04;\n    f += 0.031250*(0.5+0.5*noise( p )); p = m*p*2.01;\n    f += 0.015625*(0.5+0.5*noise( p ));\n    return f/0.96875;\n}\n\nfloat func( vec2 q, out vec4 ron )\n{\n    float ql = length( q );\n    q.x += 0.05*sin(0.01*u_Time+ql*4.1);\n    q.y += 0.05*sin(0.01*u_Time+ql*4.3);\n    q *= 0.5;\n\n\tvec2 o = vec2(0.0);\n    o.x = 0.5 + 0.5*fbm4( vec2(2.0*q          )  );\n    o.y = 0.5 + 0.5*fbm4( vec2(2.0*q+vec2(5.2))  );\n\n\tfloat ol = length( o );\n    o.x += 0.02*sin(0.01*u_Time+ol)/ol;\n    o.y += 0.02*sin(0.01*u_Time+ol)/ol;\n\n    vec2 n;\n    n.x = fbm6( vec2(4.0*o+vec2(9.2))  );\n    n.y = fbm6( vec2(4.0*o+vec2(5.7))  );\n\n    vec2 p = 4.0*q + 4.0*n;\n\n    float f = 0.5 + 0.5*fbm4( p );\n\n    f = mix( f, f*f*f*3.5, f*abs(n.x) );\n\n    float g = 0.5 + 0.5*sin(4.0*p.x)*sin(4.0*p.y);\n    f *= 1.0-0.5*pow( g, 8.0 );\n\n\tron = vec4( o, n );\n\t\n    return f;\n}\n\n\nvec3 doMagic(vec2 p)\n{\n\tvec2 q = p*0.6;\n\n    vec4 on = vec4(0.0);\n    float f = func(q, on);\n\n\tvec3 col = vec3(0.0);\n    col = mix( vec3(0.0196, 0.5804, 0.1608), vec3(0.0235, 0.2588, 0.4784), f );\n    col = mix( col, vec3(0.1922, 0.0039, 0.1098), dot(on.zw,on.zw) );\n    col = mix( col, vec3(0.502, 0.0118, 0.2157), 0.5*on.y*on.y );\n    col = mix( col, vec3(0.0,0.2,0.4), 0.5*smoothstep(1.2,1.3,abs(on.z)+abs(on.w)) );\n    col = clamp( col*f*2.0, 0.0, 1.0 );\n\treturn 1.1*col*col;\n\n}\n\nfloat rand(vec2 uv) {\n    const highp float a = 12.9898;\n    const highp float b = 78.233;\n    const highp float c = 43758.5453;\n    highp float dt = dot(uv, vec2(a, b));\n    highp float sn = mod(dt, 3.1415);\n    return fract(sin(sn) * c);\n}\n\nvoid draw_stars(inout vec4 color, vec2 uv) {\n    float t = sin(u_Time * 0.1 * rand(-uv)) * 0.5 + 0.5;\n    //color += step(0.99, stars) * t;\n    color += smoothstep(0.99, 1.0, rand(uv)) * t;\n}\n\n\n\nvoid main() {\n\n  vec2 dim = vec2(400.0, 400.0);\n    vec2 p = (-dim.xy+200.0*vec2(fs_Pos))/dim.y;\n\n\n    //p = (-u_Dimensions.xy+2.0*vec2(fs_Pos));\n\n    \n    vec2 uv = vec2(noise(fs_Pos)) / dim.xy;\n    vec2 p1 = vec2(400.0/ 400.0, 1.0);\n    p1 = vec2(0.0, 1.0);\n    vec3 color1 = doMagic(p);\n    out_Col = vec4(color1 * 1.1, 1.0 );\n    //draw_stars(out_Col, uv);\n\n    //out_Col = vec4(p1, p1);\n\n    //out_Col = (1.0 - distance * 0.4) * (vec4(getMountainColor(), 1.0) + vec4(pinkClouds * 0.3, 0.4) + (starColor * 0.9));\n\t\treturn;\n}"
 
 /***/ })
 /******/ ]);

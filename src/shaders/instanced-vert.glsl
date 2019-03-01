@@ -52,7 +52,9 @@ void main()
     vec4 pos = trans * vs_Pos;
 
     // vec4 pos = rotate_vector(vs_Rotate, vs_Pos + vec4(offset, 0.0));
-    pos -= vec4(0, 2.0, 0, 0);
+    pos -= vec4(0, 8.0, 0, 0);
+
+    //fs_Pos = pos;
     //pos = vec4(0.5 * vec2(pos), pos.zw);
     //vec3 billboardPos = offset + vs_Pos.x * u_CameraAxes[0] + vs_Pos.y * u_CameraAxes[1];
     //vec3 billboardPos = offset + pos.x * u_CameraAxes[0] + pos.y * u_CameraAxes[1];
@@ -61,9 +63,10 @@ void main()
     //gl_Position = u_ViewProj * vec4(billboardPos, 1.0);
 
 
-    //  vec3 color = vec3(0.1647, 0.2314, 0.0039);
+      vec3 color = vec3(0.2314, 0.149, 0.0);
 
     //gl_Position = u_ViewProj * vs_Pos;
-    gl_Position = u_ViewProj * vec4(2.0 * vec3(pos), pos.w);
+    gl_Position = u_ViewProj * vec4(0.7 * vec3(pos), pos.w);
+    //gl_Position = u_ViewProj * pos;
 
 }
